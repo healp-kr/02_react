@@ -4,11 +4,9 @@ import Clock from './components/Clock.jsx'
 import Panel from './components/Panel.jsx'
 import AccountCard  from './components/AccountCard.jsx'
 import Header from './components/Header'
-import Counter from './components/Counter.jsx'
 import { useState } from 'react'
-import TransactionRow from './components/TransactionRow.jsx'
 import { transactions as initialTransactions } from './data/mockData'
-import { formatWon } from './utils/format.js'
+import { formatWonMasked } from './utils/format.js'
 import ExchangeRate from './components/ExchangeRate.jsx'
 import TransactionList from './components/TransactionList.jsx'
 import { UserProvider } from './contexts/UserContext.jsx'
@@ -55,9 +53,7 @@ function App() {
   //     ↑현재 값      ↑바꾸는 함수              ↑처음값
 
   // 실습!
-  // showAmount 버튼의 클릭 여부에 따라 AccoutCard의 금액이 보이거나 보이지 않도록 
-  // prop으로 새로 생긴 변수를 넘겨보세요
-  const [showAmount, setShowAmount] = useState(false);
+  const [hideAmount, setHideAmount] = useState(false);
 
   // 고객에 관한 전체 정보를 한 번 불러와서 state로 관리
   const [accounts, setAccounts] = useState(initialAccounts);
@@ -71,10 +67,29 @@ function App() {
   // map 함수를 가지고 특정 dict의 모든 값-value에 접근해서
   // balance 라는 key에만 10000을 더합니다.
   function handleDeposit(accountId) {
+    const target = accounts.find((account) => account.accountId === accountId)
+    const nextBalance = target.balance + 10000
+
     setAccounts(
-      accounts.map((a) => 
-        a.accountId === accountId ? {...a, balance: a.balance + 10000} : a)
+      accounts.map((account) =>
+        account.accountId === accountId ? { ...account, balance: nextBalance } : account
+      )
     )
+
+    setTransactions((prev) => [
+      {
+        txId: Date.now(),
+        accountId,
+        txType: "입금",
+        amount: 10000,
+        balanceAfter: nextBalance,
+        category: "입금",
+        memo: "입금",
+        counterparty: "입금 버튼",
+        txDatetime: new Date().toLocaleString("sv-SE", { timeZone: "Asia/Seoul" }),
+      },
+      ...prev,
+    ])
   }
 
    // 추가: 이체 폼(TransferForm)에서 이체 버튼을 누르면 이 함수가 실행됩니다.
@@ -99,7 +114,7 @@ function App() {
         category: "이체",
         memo: memo || "이체",
         counterparty: toAccount,
-        txDatetime: new Date().toISOString().slice(0, 19),
+        txDatetime: new Date().toLocaleString("sv-SE", { timeZone: "Asia/Seoul" }),
       },
       ...prev, // 새 거래를 맨 앞에
     ])
@@ -118,16 +133,18 @@ function App() {
     <UserProvider user={{ name: "김연지", grade: "우수" }}>    
     <Header />
 
-    <button onClick={() => setShowFullNo(!showFullNo)}>
+    <div className="toolbar">
+    <button className="btn btn-ghost" onClick={() => setShowFullNo(!showFullNo)}>
       {/* 논리연산자를 사용해서 같은 화면을 조건부 렌더링해보세요 */}
       {/* showFullNo ? "계좌번호 숨기기" : "계좌번호 보기" */}
       {showFullNo && "계좌번호 숨기기"}
       {!showFullNo && "계좌번호 보기"}
     </button>
 
-    <button onClick={() => setShowAmount(!showAmount)}>
-      {showAmount ? "금액 숨기기" : "금액 보기"}
+    <button className="btn btn-ghost" onClick={() => setHideAmount(!hideAmount)}>
+      {hideAmount ? "금액 보기" : "금액 숨기기"}
     </button>
+    </div>
     
     <Clock />
     {/* class 는 JS의 예약어이므로 JSX에서는 className으로 대신 사용합니다.*/}
@@ -138,8 +155,8 @@ function App() {
     </Panel>
      
     <div className="total">
-      <p> 총 자산 </p>
-      <p> {formatWon(totalBalance) } </p>
+      <p className="muted"> 총 자산 </p>
+      <p className="balance"> {formatWonMasked(totalBalance, hideAmount)} </p>
     </div>
     {/* 사용 */}
 
@@ -157,7 +174,7 @@ function App() {
         >
           <AccountCard key={account.accountId} 
                       showFullNo={showFullNo}
-                      showAmount={showAmount}
+                      hideAmount={hideAmount}
                       onDeposit={() => handleDeposit(account.accountId)} 
                       accountNo={account.accountNo}
                       accountType={account.accountType} 
@@ -174,7 +191,7 @@ function App() {
     txType, amount, category, memo, counterparty, txDatetime, hideAmount  */}
 
     <Panel title="최근 거래">
-      <TransactionList transactions={transactions} showAmount={showAmount} />
+      <TransactionList transactions={transactions} hideAmount={hideAmount} />
     </Panel>
 
     <Panel title="오늘의 환율"> 
