@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "installCommand": "npm --prefix won-banking-mini install",
+  "buildCommand": "npm --prefix won-banking-mini run build",
+  "outputDirectory": "won-banking-mini/dist"
+}
